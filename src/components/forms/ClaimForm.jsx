@@ -14,7 +14,12 @@ const initialState = {
   amount: '',
 }
 
-export function ClaimForm({ onSubmit, loading }) {
+export function ClaimForm({
+  onSubmit,
+  loading,
+  submitLabel = 'Submit Claim',
+  onClaimTypeChange,
+}) {
   const [form, setForm] = useState(initialState)
   const [errors, setErrors] = useState({})
 
@@ -52,6 +57,7 @@ export function ClaimForm({ onSubmit, loading }) {
           onValueChange={(v) => {
             setForm((p) => ({ ...p, claimType: v }))
             setErrors((p) => ({ ...p, claimType: undefined }))
+            onClaimTypeChange?.(v)
           }}
           placeholder="Select claim type"
           options={CLAIM_TYPES.map((t) => ({ value: t, label: t }))}
@@ -83,7 +89,7 @@ export function ClaimForm({ onSubmit, loading }) {
           />
         </FormField>
 
-        <FormField label="Claim Amount ($)" error={errors.amount} required htmlFor="amount">
+        <FormField label="Claim Amount (₹)" error={errors.amount} required htmlFor="amount">
           <Input
             id="amount"
             name="amount"
@@ -99,7 +105,7 @@ export function ClaimForm({ onSubmit, loading }) {
 
       <div className="flex justify-end gap-3 pt-2">
         <Button type="submit" disabled={loading}>
-          {loading ? 'Submitting...' : 'Submit Claim'}
+          {loading ? 'Please wait...' : submitLabel}
         </Button>
       </div>
     </form>

@@ -102,7 +102,7 @@ export function DashboardLayout() {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-700"
+            className="cursor-pointer flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-700"
           >
             <LogOut className="h-5 w-5 shrink-0" />
             {!collapsed && <span>Logout</span>}

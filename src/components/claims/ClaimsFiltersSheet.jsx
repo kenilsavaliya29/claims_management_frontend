@@ -26,10 +26,11 @@ export function ClaimsFiltersSheet({
         description="Refine claims by status, type, amount, dates, and sort order."
       >
         <div className="space-y-5">
-          <FilterField label="Status">
+          <FilterField label="Status" >
             <Select
               value={draft.status || 'ALL'}
               onValueChange={(v) => set('status', v === 'ALL' ? '' : v)}
+              className="cursor-pointer"
               placeholder="All statuses"
               options={[
                 { value: 'ALL', label: 'All statuses' },
@@ -45,6 +46,7 @@ export function ClaimsFiltersSheet({
             <Select
               value={draft.claimType || 'ALL'}
               onValueChange={(v) => set('claimType', v === 'ALL' ? '' : v)}
+              className="cursor-pointer"
               placeholder="All types"
               options={[
                 { value: 'ALL', label: 'All types' },
@@ -57,6 +59,7 @@ export function ClaimsFiltersSheet({
             <FilterField label="Sort by">
               <Select
                 value={draft.sortBy}
+                className="cursor-pointer"
                 onValueChange={(v) => set('sortBy', v)}
                 options={CLAIM_SORT_FIELDS}
               />
@@ -64,6 +67,7 @@ export function ClaimsFiltersSheet({
             <FilterField label="Direction">
               <Select
                 value={draft.sortDirection}
+                className="cursor-pointer"
                 onValueChange={(v) => set('sortDirection', v)}
                 options={[
                   { value: 'desc', label: 'Descending' },
@@ -79,6 +83,7 @@ export function ClaimsFiltersSheet({
                 type="number"
                 min="0"
                 placeholder="1000"
+                className="cursor-pointer"
                 value={draft.minAmount}
                 onChange={(e) => set('minAmount', e.target.value)}
               />
@@ -88,6 +93,7 @@ export function ClaimsFiltersSheet({
                 type="number"
                 min="0"
                 placeholder="50000"
+                className="cursor-pointer"
                 value={draft.maxAmount}
                 onChange={(e) => set('maxAmount', e.target.value)}
               />
@@ -99,6 +105,7 @@ export function ClaimsFiltersSheet({
               <Input
                 type="date"
                 value={draft.fromDate}
+                className="cursor-pointer"
                 onChange={(e) => set('fromDate', e.target.value)}
               />
             </FilterField>
@@ -106,6 +113,7 @@ export function ClaimsFiltersSheet({
               <Input
                 type="date"
                 value={draft.toDate}
+                className="cursor-pointer"
                 onChange={(e) => set('toDate', e.target.value)}
               />
             </FilterField>
@@ -113,10 +121,10 @@ export function ClaimsFiltersSheet({
         </div>
 
         <div className="mt-8 flex gap-3 border-t border-slate-100 pt-4">
-          <Button className="flex-1" onClick={onApply}>
+          <Button className="flex-1 cursor-pointer" onClick={onApply} >
             Apply filters
           </Button>
-          <Button variant="outline" onClick={onClear}>
+          <Button variant="outline" onClick={onClear} className="cursor-pointer">
             Clear all
           </Button>
         </div>

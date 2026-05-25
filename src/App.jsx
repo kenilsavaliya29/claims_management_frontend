@@ -14,6 +14,7 @@ function AppContent() {
 
   return (
     <AuthProvider onUnauthorized={handleUnauthorized}>
+      <h1 className='w-full mx-auto text-center'>Local</h1>
       <AppRoutes />
       <Toaster position="top-right" richColors closeButton />
     </AuthProvider>
