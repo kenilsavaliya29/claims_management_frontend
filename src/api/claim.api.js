@@ -10,4 +10,11 @@ export const claimApi = {
   getAdminClaims: (options = {}) =>
     api.get('/admin/claims', { params: buildClaimsQueryParams(options) }),
   getById: (claimId) => api.get(`/claim/${claimId}`),
+  /** multipart: file + documentType */
+  uploadDocument: (claimId, file, documentType) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('documentType', documentType)
+    return api.post(`/api/claims/${claimId}/documents`, formData)
+  },
 }

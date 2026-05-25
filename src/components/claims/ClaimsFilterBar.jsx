@@ -46,7 +46,7 @@ export function ClaimsFilterBar({
               onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
-          <Button type="submit" variant="secondary">
+          <Button type="submit" variant="secondary" className="cursor-pointer">
             Search
           </Button>
         </form>

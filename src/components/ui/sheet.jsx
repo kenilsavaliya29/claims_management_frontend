@@ -39,8 +39,8 @@ export function SheetContent({ className, title, description, children }) {
               </DialogPrimitive.Description>
             )}
           </div>
-          <DialogPrimitive.Close className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-4 w-4" />
+          <DialogPrimitive.Close className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer">
+            <X className="h-4 w-4 " />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         </div>
