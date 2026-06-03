@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, FileUp, Loader2, Upload, XCircle } from 'lucide-react'
 import { claimApi } from '@/api/claim.api'
 import { Button } from '@/components/ui/button'
@@ -7,20 +7,33 @@ import { getApiErrorMessage } from '@/services/apiError'
 import {
   formatFileSize,
   getDocumentTypeLabel,
+  buildUploadedDocumentsMap,
   getDocumentTypesForClaimType,
   MAX_DOCUMENT_SIZE_BYTES,
   validateDocumentFile,
 } from '@/utils/documentTypes'
 import { cn } from '@/utils/cn'
 
-export function ClaimDocumentsUpload({ claimId, claimType, onUploadComplete }) {
+export function ClaimDocumentsUpload({
+  claimId,
+  claimType,
+  initialDocuments,
+  onUploadComplete,
+  disabled = false,
+}) {
   const types = getDocumentTypesForClaimType(claimType)
   const [activeType, setActiveType] = useState(types[0] ?? '')
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
-  const [uploaded, setUploaded] = useState({})
+  const [uploaded, setUploaded] = useState(() => buildUploadedDocumentsMap(initialDocuments))
   const inputRef = useRef(null)
+
+  useEffect(() => {
+    const map = buildUploadedDocumentsMap(initialDocuments)
+    setUploaded(map)
+    onUploadComplete?.(Object.keys(map).length)
+  }, [claimId, initialDocuments])
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0]
@@ -40,7 +53,7 @@ export function ClaimDocumentsUpload({ claimId, claimType, onUploadComplete }) {
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || !activeType) return
+    if (disabled || !selectedFile || !activeType) return
     setUploading(true)
     setError('')
     try {
@@ -71,11 +84,20 @@ export function ClaimDocumentsUpload({ claimId, claimType, onUploadComplete }) {
     )
   }
 
+  if (disabled) {
+    return (
+      <p className="text-sm text-slate-500">
+        Documents cannot be added or changed for claims that are already approved or rejected.
+      </p>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500">
         Upload supporting documents (max {formatFileSize(MAX_DOCUMENT_SIZE_BYTES)} per file).
-        Select a document type tab, choose a file, then upload.
+        Select a document type tab, choose a file, then upload. You can return here anytime to add
+        missing documents.
       </p>
 
       <Tabs value={activeType} onValueChange={(v) => {
@@ -204,11 +226,20 @@ function DocumentUploadPanel({
   )
 }
 
-export function ClaimDocumentsSummary({ uploadedCount, totalTypes, className }) {
+export function ClaimDocumentsSummary({
+  uploadedCount,
+  totalTypes,
+  className,
+  variant = 'create',
+}) {
+  const message =
+    variant === 'existing'
+      ? `${uploadedCount} of ${totalTypes} document type${totalTypes === 1 ? '' : 's'} on file. Upload any missing types below.`
+      : `Claim created successfully. Upload documents below (${uploadedCount}/${totalTypes} types uploaded).`
+
   return (
     <div className={cn('rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-800', className)}>
-      Claim created successfully. Upload documents below ({uploadedCount}/{totalTypes} types
-      uploaded).
+      {message}
     </div>
   )
 }

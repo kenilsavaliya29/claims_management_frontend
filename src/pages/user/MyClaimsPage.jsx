@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AdminRemarksCell } from '@/components/claims/AdminRemarksCell'
 import { formatCurrency, formatDate } from '@/utils/format'
+import { Upload } from 'lucide-react'
 
 const PAGE_SIZE = 10
 
@@ -53,6 +54,27 @@ export function MyClaimsPage() {
       key: 'createdAt',
       header: 'Created',
       render: (row) => formatDate(row.createdAt ?? row.createdDate),
+    },
+    {
+      key: 'actions',
+      header: 'Documents',
+      render: (row) => {
+        const id = row.claimId ?? row.id
+        return (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/claims/${id}#documents`)
+            }}
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Upload
+          </Button>
+        )
+      },
     },
   ]
 
