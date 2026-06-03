@@ -59,3 +59,30 @@ export function validateDocumentFile(file) {
   }
   return null
 }
+
+/** Maps API document list to local upload state keyed by document type. */
+export function buildUploadedDocumentsMap(documents) {
+  if (!documents) return {}
+
+  const list = Array.isArray(documents)
+    ? documents
+    : Object.entries(documents).map(([documentType, doc]) => ({
+        documentType,
+        ...(typeof doc === 'object' && doc !== null ? doc : { fileName: String(doc) }),
+      }))
+
+  return list.reduce((acc, doc) => {
+    const type = doc.documentType ?? doc.type
+    if (!type) return acc
+    acc[type] = {
+      name: doc.fileName ?? doc.originalFileName ?? doc.name ?? 'Uploaded file',
+      size: doc.fileSize ?? doc.size ?? 0,
+    }
+    return acc
+  }, {})
+}
+
+export function getClaimDocumentsFromResponse(claim) {
+  if (!claim) return []
+  return claim.documents ?? claim.claimDocuments ?? claim.attachments ?? []
+}

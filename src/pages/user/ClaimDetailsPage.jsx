@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, DollarSign, FileText, MessageSquare } from 'lucide-react'
 import { claimApi } from '@/api/claim.api'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -12,12 +12,26 @@ import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { getApiErrorMessage, unwrapApiData } from '@/services/apiError'
 import { getAdminRemarks } from '@/services/claims'
 import { AdminRemarksBlock } from '@/components/claims/AdminRemarksCell'
+import {
+  ClaimDocumentsSummary,
+  ClaimDocumentsUpload,
+} from '@/components/claims/ClaimDocumentsUpload'
+import { CLAIM_STATUSES } from '@/utils/constants'
+import {
+  getClaimDocumentsFromResponse,
+  getDocumentTypesForClaimType,
+} from '@/utils/documentTypes'
 import { toast } from 'sonner'
+
+const FINAL_CLAIM_STATUSES = [CLAIM_STATUSES.APPROVED, CLAIM_STATUSES.REJECTED]
 
 export function ClaimDetailsPage() {
   const { claimId } = useParams()
+  const { hash } = useLocation()
+  const documentsSectionRef = useRef(null)
   const [claim, setClaim] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [uploadedCount, setUploadedCount] = useState(0)
 
   useEffect(() => {
     const fetchClaim = async () => {
@@ -32,6 +46,16 @@ export function ClaimDetailsPage() {
     }
     fetchClaim()
   }, [claimId])
+
+  useEffect(() => {
+    if (hash !== '#documents' || loading || !claim) return
+    documentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [hash, loading, claim])
+
+  const existingDocuments = useMemo(
+    () => (claim ? getClaimDocumentsFromResponse(claim) : []),
+    [claim]
+  )
 
   if (loading) {
     return (
@@ -54,6 +78,9 @@ export function ClaimDetailsPage() {
   }
 
   const adminRemarks = getAdminRemarks(claim)
+  const resolvedClaimId = claim.claimId ?? claim.id
+  const documentTypeCount = getDocumentTypesForClaimType(claim.claimType).length
+  const canUploadDocuments = !FINAL_CLAIM_STATUSES.includes(claim.status)
   const timeline = claim.statusHistory ?? claim.timeline ?? [
     {
       status: claim.status,
@@ -105,6 +132,31 @@ export function ClaimDetailsPage() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          <Card id="documents" ref={documentsSectionRef}>
+            <CardHeader>
+              <CardTitle>Supporting documents</CardTitle>
+              <p className="text-sm text-slate-500">
+                Add or replace documents you did not upload when filing this claim.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {documentTypeCount > 0 && (
+                <ClaimDocumentsSummary
+                  variant="existing"
+                  uploadedCount={uploadedCount}
+                  totalTypes={documentTypeCount}
+                />
+              )}
+              <ClaimDocumentsUpload
+                claimId={resolvedClaimId}
+                claimType={claim.claimType}
+                initialDocuments={existingDocuments}
+                onUploadComplete={setUploadedCount}
+                disabled={!canUploadDocuments}
+              />
             </CardContent>
           </Card>
         </div>
