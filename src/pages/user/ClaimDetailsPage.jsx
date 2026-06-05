@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { ArrowLeft, Calendar, DollarSign, FileText, MessageSquare } from 'lucide-react'
 import { claimApi } from '@/api/claim.api'
@@ -12,15 +12,14 @@ import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
 import { getApiErrorMessage, unwrapApiData } from '@/services/apiError'
 import { getAdminRemarks } from '@/services/claims'
 import { AdminRemarksBlock } from '@/components/claims/AdminRemarksCell'
+import { ClaimDocumentsList } from '@/components/claims/ClaimDocumentsList'
 import {
   ClaimDocumentsSummary,
   ClaimDocumentsUpload,
 } from '@/components/claims/ClaimDocumentsUpload'
 import { CLAIM_STATUSES } from '@/utils/constants'
-import {
-  getClaimDocumentsFromResponse,
-  getDocumentTypesForClaimType,
-} from '@/utils/documentTypes'
+import { getDocumentTypesForClaimType, normalizeDocumentType } from '@/utils/documentTypes'
+import { unwrapDocumentsList } from '@/services/documents'
 import { toast } from 'sonner'
 
 const FINAL_CLAIM_STATUSES = [CLAIM_STATUSES.APPROVED, CLAIM_STATUSES.REJECTED]
@@ -31,6 +30,8 @@ export function ClaimDetailsPage() {
   const documentsSectionRef = useRef(null)
   const [claim, setClaim] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [documents, setDocuments] = useState([])
+  const [documentsLoading, setDocumentsLoading] = useState(true)
   const [uploadedCount, setUploadedCount] = useState(0)
 
   useEffect(() => {
@@ -47,15 +48,39 @@ export function ClaimDetailsPage() {
     fetchClaim()
   }, [claimId])
 
+  const resolvedClaimId = claim?.claimId ?? claim?.id ?? claimId
+
+  const loadDocuments = useCallback(async () => {
+    if (!resolvedClaimId) return
+    setDocumentsLoading(true)
+    try {
+      const res = await claimApi.getClaimDocuments(resolvedClaimId)
+      const list = unwrapDocumentsList(res)
+      setDocuments(list)
+      setUploadedCount(
+        new Set(
+          list
+            .map((d) => normalizeDocumentType(d.documentType ?? d.type))
+            .filter(Boolean)
+        ).size
+      )
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to load documents'))
+      setDocuments([])
+    } finally {
+      setDocumentsLoading(false)
+    }
+  }, [resolvedClaimId])
+
+  useEffect(() => {
+    if (!claim) return
+    loadDocuments()
+  }, [claim, loadDocuments])
+
   useEffect(() => {
     if (hash !== '#documents' || loading || !claim) return
     documentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [hash, loading, claim])
-
-  const existingDocuments = useMemo(
-    () => (claim ? getClaimDocumentsFromResponse(claim) : []),
-    [claim]
-  )
 
   if (loading) {
     return (
@@ -78,7 +103,6 @@ export function ClaimDetailsPage() {
   }
 
   const adminRemarks = getAdminRemarks(claim)
-  const resolvedClaimId = claim.claimId ?? claim.id
   const documentTypeCount = getDocumentTypesForClaimType(claim.claimType).length
   const canUploadDocuments = !FINAL_CLAIM_STATUSES.includes(claim.status)
   const timeline = claim.statusHistory ?? claim.timeline ?? [
@@ -150,13 +174,22 @@ export function ClaimDetailsPage() {
                   totalTypes={documentTypeCount}
                 />
               )}
-              <ClaimDocumentsUpload
-                claimId={resolvedClaimId}
-                claimType={claim.claimType}
-                initialDocuments={existingDocuments}
-                onUploadComplete={setUploadedCount}
-                disabled={!canUploadDocuments}
-              />
+
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-slate-900">Uploaded files</h4>
+                <ClaimDocumentsList documents={documents} loading={documentsLoading} />
+              </div>
+
+              {canUploadDocuments && (
+                <ClaimDocumentsUpload
+                  claimId={resolvedClaimId}
+                  claimType={claim.claimType}
+                  initialDocuments={documents}
+                  onUploadComplete={setUploadedCount}
+                  onDocumentsChange={loadDocuments}
+                  disabled={!canUploadDocuments}
+                />
+              )}
             </CardContent>
           </Card>
         </div>

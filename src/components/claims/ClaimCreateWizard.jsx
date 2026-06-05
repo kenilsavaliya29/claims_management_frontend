@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { claimApi } from '@/api/claim.api'
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getApiErrorMessage } from '@/services/apiError'
 import { parseCreateClaimResponse } from '@/services/claimResponse'
 import { getDocumentTypesForClaimType } from '@/utils/documentTypes'
+import { unwrapDocumentsList } from '@/services/documents'
 import { cn } from '@/utils/cn'
 
 const STEPS = [
@@ -23,6 +24,21 @@ export function ClaimCreateWizard() {
   const [claimId, setClaimId] = useState(null)
   const [claimType, setClaimType] = useState('')
   const [uploadedCount, setUploadedCount] = useState(0)
+  const [documents, setDocuments] = useState([])
+
+  const refreshDocuments = useCallback(async () => {
+    if (!claimId) return
+    try {
+      const res = await claimApi.getClaimDocuments(claimId)
+      const list = unwrapDocumentsList(res)
+      setDocuments(list)
+      setUploadedCount(
+        new Set(list.map((d) => d.documentType ?? d.type).filter(Boolean)).size
+      )
+    } catch {
+      setDocuments([])
+    }
+  }, [claimId])
 
   const documentTypeCount = claimType
     ? getDocumentTypesForClaimType(claimType).length
@@ -127,7 +143,9 @@ export function ClaimCreateWizard() {
             <ClaimDocumentsUpload
               claimId={claimId}
               claimType={claimType}
+              initialDocuments={documents}
               onUploadComplete={setUploadedCount}
+              onDocumentsChange={refreshDocuments}
             />
             <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
               <Button type="button" variant="secondary" onClick={() => setStep('details')}>

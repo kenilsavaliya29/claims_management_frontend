@@ -17,4 +17,9 @@ export const claimApi = {
     formData.append('documentType', documentType)
     return api.post(`/api/claims/${claimId}/documents`, formData)
   },
+  /** Metadata for all documents on a claim. */
+  getClaimDocuments: (claimId) => api.get(`/api/claims/${claimId}/documents`),
+  /** Raw file bytes for preview or download. */
+  fetchDocumentBlob: (documentId) =>
+    api.get(`/api/documents/${documentId}`, { responseType: 'blob' }),
 }
