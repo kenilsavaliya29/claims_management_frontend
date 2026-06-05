@@ -112,8 +112,11 @@ export function buildUploadedDocumentsMap(documents) {
     const type = normalizeDocumentType(doc.documentType ?? doc.type)
     if (!type) return acc
     acc[type] = {
+      documentId: doc.documentId ?? doc.docId ?? doc.id ?? null,
       name: doc.fileName ?? doc.originalFileName ?? doc.name ?? 'Uploaded file',
       size: doc.fileSize ?? doc.size ?? 0,
+      contentType: doc.contentType ?? doc.mimeType ?? null,
+      uploadedAt: doc.uploadedAt ?? doc.createdAt ?? null,
     }
     return acc
   }, {})

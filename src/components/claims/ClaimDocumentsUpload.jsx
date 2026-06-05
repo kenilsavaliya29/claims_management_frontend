@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, FileUp, Loader2, Upload, XCircle } from 'lucide-react'
+import { CheckCircle2, Eye, FileUp, Loader2, Upload, XCircle } from 'lucide-react'
+import { DocumentPreviewDialog } from '@/components/claims/DocumentPreviewDialog'
 import { claimApi } from '@/api/claim.api'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -19,6 +20,7 @@ export function ClaimDocumentsUpload({
   claimType,
   initialDocuments,
   onUploadComplete,
+  onDocumentsChange,
   disabled = false,
 }) {
   const types = getDocumentTypesForClaimType(claimType)
@@ -27,6 +29,7 @@ export function ClaimDocumentsUpload({
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [uploaded, setUploaded] = useState(() => buildUploadedDocumentsMap(initialDocuments))
+  const [previewDoc, setPreviewDoc] = useState(null)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -58,17 +61,7 @@ export function ClaimDocumentsUpload({
     setError('')
     try {
       await claimApi.uploadDocument(claimId, selectedFile, activeType)
-      setUploaded((prev) => {
-        const next = {
-          ...prev,
-          [activeType]: {
-            name: selectedFile.name,
-            size: selectedFile.size,
-          },
-        }
-        onUploadComplete?.(Object.keys(next).length)
-        return next
-      })
+      await onDocumentsChange?.()
       setSelectedFile(null)
       if (inputRef.current) inputRef.current.value = ''
     } catch (err) {
@@ -126,6 +119,15 @@ export function ClaimDocumentsUpload({
               inputRef={activeType === type ? inputRef : null}
               onFileChange={handleFileChange}
               onUpload={handleUpload}
+              onPreview={(doc) =>
+                setPreviewDoc({
+                  documentId: doc.documentId,
+                  documentType: type,
+                  name: doc.name,
+                  size: doc.size,
+                  contentType: doc.contentType,
+                })
+              }
               onReplace={() => {
                 setUploaded((prev) => {
                   const next = { ...prev }
@@ -145,6 +147,12 @@ export function ClaimDocumentsUpload({
         {Object.keys(uploaded).length} of {types.length} document type
         {types.length === 1 ? '' : 's'} uploaded
       </p>
+
+      <DocumentPreviewDialog
+        open={Boolean(previewDoc)}
+        onOpenChange={(open) => !open && setPreviewDoc(null)}
+        document={previewDoc}
+      />
     </div>
   )
 }
@@ -160,6 +168,7 @@ function DocumentUploadPanel({
   onUpload,
   onBrowse,
   onReplace,
+  onPreview,
 }) {
   return (
     <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-6">
@@ -179,9 +188,17 @@ function DocumentUploadPanel({
             <p className="truncate text-sm text-emerald-800">{uploaded.name}</p>
             <p className="text-xs text-emerald-700">{formatFileSize(uploaded.size)}</p>
           </div>
-          <Button type="button" variant="secondary" size="sm" onClick={onReplace}>
-            Replace
-          </Button>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            {uploaded.documentId && (
+              <Button type="button" variant="secondary" size="sm" onClick={() => onPreview?.(uploaded)}>
+                <Eye className="h-4 w-4" />
+                Preview
+              </Button>
+            )}
+            <Button type="button" variant="secondary" size="sm" onClick={onReplace}>
+              Replace
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col items-center text-center">
