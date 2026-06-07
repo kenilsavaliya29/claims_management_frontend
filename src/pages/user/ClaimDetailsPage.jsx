@@ -177,7 +177,13 @@ export function ClaimDetailsPage() {
 
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-slate-900">Uploaded files</h4>
-                <ClaimDocumentsList documents={documents} loading={documentsLoading} />
+                <ClaimDocumentsList
+                  documents={documents}
+                  loading={documentsLoading}
+                  claimId={resolvedClaimId}
+                  canDelete={canUploadDocuments}
+                  onDocumentsChange={loadDocuments}
+                />
               </div>
 
               {canUploadDocuments && (

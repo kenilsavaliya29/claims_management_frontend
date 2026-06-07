@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, Eye, FileUp, Loader2, Upload, XCircle } from 'lucide-react'
+import { CheckCircle2, Eye, FileUp, Loader2, Trash2, Upload, XCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { DocumentPreviewDialog } from '@/components/claims/DocumentPreviewDialog'
 import { claimApi } from '@/api/claim.api'
 import { Button } from '@/components/ui/button'
@@ -27,6 +28,7 @@ export function ClaimDocumentsUpload({
   const [activeType, setActiveType] = useState(types[0] ?? '')
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [deletingType, setDeletingType] = useState(null)
   const [error, setError] = useState('')
   const [uploaded, setUploaded] = useState(() => buildUploadedDocumentsMap(initialDocuments))
   const [previewDoc, setPreviewDoc] = useState(null)
@@ -68,6 +70,24 @@ export function ClaimDocumentsUpload({
       setError(getApiErrorMessage(err, 'Failed to upload document'))
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleDelete = async (documentType) => {
+    const doc = uploaded[documentType]
+    if (disabled || !doc?.documentId || !claimId) return
+    if (!window.confirm(`Delete "${doc.name}"? This cannot be undone.`)) return
+
+    setDeletingType(documentType)
+    setError('')
+    try {
+      await claimApi.deleteDocument(claimId, doc.documentId)
+      toast.success('Document deleted')
+      await onDocumentsChange?.()
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Failed to delete document'))
+    } finally {
+      setDeletingType(null)
     }
   }
 
@@ -116,9 +136,11 @@ export function ClaimDocumentsUpload({
               uploaded={uploaded[type]}
               error={activeType === type ? error : ''}
               uploading={uploading && activeType === type}
+              deleting={deletingType === type}
               inputRef={activeType === type ? inputRef : null}
               onFileChange={handleFileChange}
               onUpload={handleUpload}
+              onDelete={() => handleDelete(type)}
               onPreview={(doc) =>
                 setPreviewDoc({
                   documentId: doc.documentId,
@@ -163,11 +185,13 @@ function DocumentUploadPanel({
   uploaded,
   error,
   uploading,
+  deleting,
   inputRef,
   onFileChange,
   onUpload,
   onBrowse,
   onReplace,
+  onDelete,
   onPreview,
 }) {
   return (
@@ -195,9 +219,26 @@ function DocumentUploadPanel({
                 Preview
               </Button>
             )}
-            <Button type="button" variant="secondary" size="sm" onClick={onReplace}>
+            <Button type="button" variant="secondary" size="sm" onClick={onReplace} disabled={deleting}>
               Replace
             </Button>
+            {uploaded.documentId && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                disabled={deleting}
+                onClick={onDelete}
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Delete
+              </Button>
+            )}
           </div>
         </div>
       ) : (
