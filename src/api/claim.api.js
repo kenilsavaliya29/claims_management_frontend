@@ -22,4 +22,6 @@ export const claimApi = {
   /** Raw file bytes for preview or download. */
   fetchDocumentBlob: (documentId) =>
     api.get(`/api/documents/${documentId}`, { responseType: 'blob' }),
+  deleteDocument: (claimId, documentId) =>
+    api.delete(`/api/claims/${claimId}/documents/${documentId}`),
 }

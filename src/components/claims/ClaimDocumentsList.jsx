@@ -1,13 +1,39 @@
 import { useState } from 'react'
-import { Eye, FileText, Loader2 } from 'lucide-react'
+import { Eye, FileText, Loader2, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { claimApi } from '@/api/claim.api'
 import { Button } from '@/components/ui/button'
 import { DocumentPreviewDialog } from '@/components/claims/DocumentPreviewDialog'
+import { getApiErrorMessage } from '@/services/apiError'
 import { getDocumentId } from '@/services/documents'
 import { formatFileSize, getDocumentTypeLabel, normalizeDocumentType } from '@/utils/documentTypes'
 import { formatDateTime } from '@/utils/format'
 
-export function ClaimDocumentsList({ documents = [], loading = false }) {
+export function ClaimDocumentsList({
+  documents = [],
+  loading = false,
+  claimId,
+  canDelete = false,
+  onDocumentsChange,
+}) {
   const [previewDoc, setPreviewDoc] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+
+  const handleDelete = async (documentId, fileName) => {
+    if (!claimId || !documentId) return
+    if (!window.confirm(`Delete "${fileName}"? This cannot be undone.`)) return
+
+    setDeletingId(documentId)
+    try {
+      await claimApi.deleteDocument(claimId, documentId)
+      toast.success('Document deleted')
+      await onDocumentsChange?.()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to delete document'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -34,6 +60,7 @@ export function ClaimDocumentsList({ documents = [], loading = false }) {
           const documentType = normalizeDocumentType(doc.documentType ?? doc.type)
           const fileName = doc.fileName ?? doc.originalFileName ?? doc.name ?? 'Document'
           const size = doc.fileSize ?? doc.size
+          const isDeleting = deletingId === documentId
 
           return (
             <li
@@ -63,24 +90,43 @@ export function ClaimDocumentsList({ documents = [], loading = false }) {
                 </div>
               </div>
               {documentId ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() =>
-                    setPreviewDoc({
-                      documentId,
-                      documentType,
-                      name: fileName,
-                      size,
-                      contentType: doc.contentType ?? doc.mimeType,
-                    })
-                  }
-                >
-                  <Eye className="h-4 w-4" />
-                  Preview
-                </Button>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={isDeleting}
+                    onClick={() =>
+                      setPreviewDoc({
+                        documentId,
+                        documentType,
+                        name: fileName,
+                        size,
+                        contentType: doc.contentType ?? doc.mimeType,
+                      })
+                    }
+                  >
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </Button>
+                  {canDelete && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={isDeleting}
+                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => handleDelete(documentId, fileName)}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      Delete
+                    </Button>
+                  )}
+                </div>
               ) : null}
             </li>
           )
